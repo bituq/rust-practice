@@ -1,4 +1,4 @@
-use std::{env::Args, thread, time::Duration};
+use std::{env::Args, thread::{self, JoinHandle}, time::Duration};
 
 type Task = Box<dyn Fn() -> Result<(), String>>;
 
@@ -37,12 +37,26 @@ fn main() {
     s.enqueue(Box::new(|| {
         println!("Waiting 3 seconds...");
         thread::sleep(Duration::from_secs(3));
+
+        let mut threads: Vec<JoinHandle<()>> = Vec::new();
+
+        for i in 1..4 {
+            threads.push(thread::spawn(move || {
+                thread::sleep(Duration::from_secs(i));
+                println!("Doing work on thread {}", i);
+            }));
+        }
+
+        for thread in threads {
+            thread.join().unwrap();
+        }
+
         println!("Waited for 3 seconds! Executing next thing...");
         Ok(())
     }));
     s.enqueue(Box::new(|| {
         println!("I am the next thing. Hi!");
-        Err("UNKNOWN LOL".into())
+        Ok(())
     }));
     s.execute();
     s.execute();
