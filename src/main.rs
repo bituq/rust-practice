@@ -18,16 +18,19 @@ impl Queue {
         self.queue.push(f);
     }
 
-    pub fn dequeue(&mut self) -> Task {
+    pub fn dequeue(&mut self) -> Option<Task> {
         self.done_len += 1;
-        self.queue.remove(0)
+        if self.queue.len() == 0 {
+            return None;
+        }
+        return Some(self.queue.remove(0));
     }
 
-    pub fn execute(&mut self) {
-        match self.dequeue()() {
-            Err(reason) => println!("Error: {}", reason),
-            _ => ()
-        };
+    pub fn execute(&mut self) -> Option<Result<(), String>> {
+        match self.dequeue() {
+            Some(dequeued) => Some(dequeued()),
+            None => None
+        }
     }
 }
 
@@ -58,6 +61,16 @@ fn main() {
         println!("I am the next thing. Hi!");
         Ok(())
     }));
-    s.execute();
-    s.execute();
+
+    while true {
+        match s.execute() {
+            Some(d) => {
+                match d {
+                    Ok(()) => (),
+                    Err(reason) => println!("Error: {}", reason)
+                };
+            },
+            None => break
+        };
+    }
 }
